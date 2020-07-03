@@ -1,2 +1,6 @@
 ec2_server_keys/
 private_settings.py
+*.pyc
+/__pycache__
+.idea/
+media/
