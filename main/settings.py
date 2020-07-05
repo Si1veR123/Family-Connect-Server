@@ -25,7 +25,21 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "familyconnect.apps.FamilyconnectConfig",
+    "channels",
 ]
+
+# using redis for django channels as a channel layer for accessing channel instances from views
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("0.0.0.0", 6379)],
+        },
+    },
+}
+
+ASGI_APPLICATION = "main.routing.application"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

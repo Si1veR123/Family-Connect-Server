@@ -1,6 +1,6 @@
 from django.urls import path, include
-import alexa.urls
+import familyconnect.urls
 
 urlpatterns = [
-    path('alexa/', include(alexa.urls)),
+    path('familyconnect/', include(familyconnect.urls)),
 ]
