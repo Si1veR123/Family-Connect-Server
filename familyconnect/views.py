@@ -133,3 +133,12 @@ def alexa(r):
     else:
         # anything else (launch etc.) just send a preset message
         return JsonResponse(get_alexa_response("This is Family Connect"))
+
+
+def id_check(r, id):
+    """
+    :return: true if given id is valid
+    """
+    if App.objects.filter(app_id=id).exists():
+        return JsonResponse({"exists": True})
+    return JsonResponse({"exists": False})

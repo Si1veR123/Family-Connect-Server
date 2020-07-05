@@ -17,21 +17,26 @@ class FamilyConnectConsumer(WebsocketConsumer):
             pass
 
     def receive(self, text_data=None, bytes_data=None):
-        data = json.loads(text_data)
+        try:
+            data = json.loads(text_data)
+        except json.decoder.JSONDecodeError:
+            return
         if data["type"] == "register":
             # check if id given and exists, or create new app
             id = data["data"].get("id")
             if id and App.objects.filter(app_id=id).exists():
                 app = App.objects.get(app_id=id)
                 app.channel_name = self.channel_name
-                self.send(text_data="{'result': 'success', 'info': 'found existing family'}")
+                app.save()
+                self.send(text_data='{"result": "success", "info": "existing"}')
+                return
             else:
                 # joining new family
                 setup_code = data["data"].get("code")
                 try:
                     family = Family.objects.get(setup_code=setup_code)
                 except Family.DoesNotExist:
-                    self.send(text_data="{'result': 'error', 'error': 'Invalid Setup Code'}")
+                    self.send(text_data='{"result": "error", "error": "Invalid Setup Code"}')
                     return
 
                 while True:
@@ -39,11 +44,10 @@ class FamilyConnectConsumer(WebsocketConsumer):
                     if not App.objects.filter(app_id=app_id).exists():
                         break
 
-
                 App.objects.create(
                     app_id=app_id,
                     channel_name=self.channel_name,
                     family=family,
-                    name=data["data"]["name"]
+                    name=data["data"]["name"].lower()
                 )
-                self.send(text_data="{'result': 'success', 'info': 'joined new family'}")
+                self.send(text_data='{"result": "success", "info": "new", "appid": ' + f'"{app_id}"' + '}')
