@@ -3,6 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from channels.layers import get_channel_layer
 from . models import *
+from asgiref.sync import async_to_sync
 import json
 import random
 
@@ -113,11 +114,11 @@ def alexa(r):
             message_sent = False
 
             # send data to all recipents
-            for r in family_recipents.iterator():
+            for r in family_recipents:
                 # if channel name of recipent is Null/None, app is not connected
-                if r["channel_name"] is not None:
-                    CHANNEL_LAYER.send(r["channel_name"], {
-                        "type": "notification",
+                if r.channel_name is not None:
+                    async_to_sync(CHANNEL_LAYER.send)(r.channel_name, {
+                        "type": "send_message",
                         "text": message
                     })
                     message_sent = True
@@ -129,7 +130,7 @@ def alexa(r):
 
         # another intent is asking to get the setup code, returns code
         elif intent == "setupCode":
-            return JsonResponse(get_alexa_response(generate_code_speech(family.setup_code)["ssml"]))
+            return JsonResponse(get_alexa_response(family.setup_code))
     else:
         # anything else (launch etc.) just send a preset message
         return JsonResponse(get_alexa_response("This is Family Connect"))

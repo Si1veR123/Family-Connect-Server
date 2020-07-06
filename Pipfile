@@ -11,7 +11,7 @@ dj-database-url = "*"
 psycopg2 = "*"
 gunicorn = "*"
 channels = "*"
-channels-redis = "*"
+channels-redis = "==2.4.1"
 
 [requires]
 python_version = "3.7"

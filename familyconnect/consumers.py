@@ -16,6 +16,9 @@ class FamilyConnectConsumer(WebsocketConsumer):
         except App.DoesNotExist:
             pass
 
+    def send_message(self, message):
+        self.send(text_data=message)
+
     def receive(self, text_data=None, bytes_data=None):
         try:
             data = json.loads(text_data)
