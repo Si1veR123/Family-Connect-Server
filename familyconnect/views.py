@@ -65,6 +65,22 @@ Enter this on the Family Connect app.
 CHANNEL_LAYER = get_channel_layer()
 
 
+
+def recipents_from_slot(who, family):
+    """
+    Returns a queryset of family members from the alexa slot 'who' and the family
+    """
+    # get all family members
+    family_members = App.objects.filter(family=family.id)
+
+    # if it is all, recipents are all members
+    if who.lower() == "all":
+        family_recipents = family_members
+    else:
+        # filter the queryset to names
+        family_recipents = family_members.filter(name=who.lower())
+
+
 @require_POST
 @csrf_exempt
 def alexa(r):
@@ -92,20 +108,9 @@ def alexa(r):
         if intent == "notify":
             # get name from data
             who = data["request"]["intent"]["slots"]["who"]["value"]
-            # get all family members
-            family_members = App.objects.filter(family=family.id)
-
-            # check that it isnt empty, or return no devices registered
-            if len(family_members) == 0:
-                return JsonResponse(get_alexa_response("No devices are registered"))
-
-            # if it is all, recipents are all members
-            if who.lower() == "all":
-                family_recipents = family_members
-            else:
-                # filter the queryset to names
-                family_recipents = family_members.filter(name=who.lower())
-
+            
+            family_recipents = recipents_from_slot(who, family)
+            
             # check that there are any recipents
             if len(family_recipents) == 0:
                 return JsonResponse(get_alexa_response("Can't find name of family member"))
@@ -119,7 +124,8 @@ def alexa(r):
                 if r.channel_name is not None:
                     async_to_sync(CHANNEL_LAYER.send)(r.channel_name, {
                         "type": "send_message",
-                        "text": message
+                        "info": "message",
+                        "data": message
                     })
                     message_sent = True
 
@@ -131,6 +137,32 @@ def alexa(r):
         # another intent is asking to get the setup code, returns code
         elif intent == "setupCode":
             return JsonResponse(get_alexa_response(family.setup_code))
+        elif intent == "reminder":
+            who = data["request"]["intent"]["slots"]["who"]["value"]
+            time = data["request"]["intent"]["slots"]["when"]["value"]
+            message = data["request"]["intent"]["slots"]["what"]["value"]
+
+            family_recipents = recipents_from_slot(who, family)
+            # check that there are any recipents
+            if len(family_recipents) == 0:
+                return JsonResponse(get_alexa_response("Can't find name of family member"))
+
+            message_sent = False
+            # send data to all recipents
+            for r in family_recipents:
+                # if channel name of recipent is Null/None, app is not connected
+                if r.channel_name is not None:
+                    async_to_sync(CHANNEL_LAYER.send)(r.channel_name, {
+                        "type": "send_message",
+                        "info": "reminder",
+                        "data":  {
+                            "time": time,
+                            "message": message
+                        }
+                    })
+                    message_sent = True
+            
+            
     else:
         # anything else (launch etc.) just send a preset message
         return JsonResponse(get_alexa_response("This is Family Connect"))

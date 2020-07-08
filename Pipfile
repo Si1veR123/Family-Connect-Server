@@ -12,6 +12,7 @@ psycopg2 = "*"
 gunicorn = "*"
 channels = "*"
 channels-redis = "==2.4.1"
+playsound = "*"
 
 [requires]
 python_version = "3.7"
